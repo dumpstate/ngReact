@@ -162,10 +162,35 @@
         restrict: 'E',
         replace: true,
         link: function(scope, elem, attrs) {
-          var reactComponent = getReactComponent(reactComponentName, $injector);
+          var reactComponent = getReactComponent(reactComponentName, $injector),
+              applyWatch = {},
+              
+              isArrayOfArrays = function (arr) {
+                if (angular.isDefined(arr) && angular.isArray(arr)) {
+                  for (var i = 0; i < arr.length; i++) {
+                    var item = arr[i];
+                    if (!angular.isArray(item) || item.length !== 2)
+                        return false;
+                  }
+                  return true;
+                } else return false;
+              };
 
-          // if propNames is not defined, fall back to use the React component's propTypes if present
-          propNames = propNames || Object.keys(reactComponent.propTypes || {});
+
+          if (isArrayOfArrays(propNames)) {
+            var pn = [];
+
+            angular.forEach(propNames, function (item) {
+              pn.push(item[0]);
+              applyWatch[item[0]] = item[1];
+            });
+
+            propNames = pn;
+          } else {
+            // if propNames is not defined, fall back to use the React component's propTypes if present
+            propNames = propNames || Object.keys(reactComponent.propTypes || {});
+            angular.forEach(propNames, function (name) { applyWatch[name] = true; });
+          }
 
           // for each of the properties, get their scope value and set it to scope.props
           var renderMyComponent = function() {
@@ -179,7 +204,9 @@
           // watch each property name and trigger an update whenever something changes,
           // to update scope.props with new values
           propNames.forEach(function(k) {
-            scope.$watch(attrs[k], renderMyComponent, true);
+            if (applyWatch[k]) {
+              scope.$watch(attrs[k], renderMyComponent, true);
+            }
           });
 
           renderMyComponent();
