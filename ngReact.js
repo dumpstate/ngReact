@@ -157,40 +157,15 @@
   //     <hello name="name"/>
   //
   var reactDirective = function($timeout, $injector) {
-    return function(reactComponentName, propNames) {
+    return function(reactComponentName, propNames, applyWatch) {
       return {
         restrict: 'E',
         replace: true,
         link: function(scope, elem, attrs) {
-          var reactComponent = getReactComponent(reactComponentName, $injector),
-              applyWatch = {},
-              
-              isArrayOfArrays = function (arr) {
-                if (angular.isDefined(arr) && angular.isArray(arr)) {
-                  for (var i = 0; i < arr.length; i++) {
-                    var item = arr[i];
-                    if (!angular.isArray(item) || item.length !== 2)
-                        return false;
-                  }
-                  return true;
-                } else return false;
-              };
+          var reactComponent = getReactComponent(reactComponentName, $injector);
 
-
-          if (isArrayOfArrays(propNames)) {
-            var pn = [];
-
-            angular.forEach(propNames, function (item) {
-              pn.push(item[0]);
-              applyWatch[item[0]] = item[1];
-            });
-
-            propNames = pn;
-          } else {
-            // if propNames is not defined, fall back to use the React component's propTypes if present
-            propNames = propNames || Object.keys(reactComponent.propTypes || {});
-            angular.forEach(propNames, function (name) { applyWatch[name] = true; });
-          }
+          // if propNames is not defined, fall back to use the React component's propTypes if present
+          propNames = propNames || Object.keys(reactComponent.propTypes || {});
 
           // for each of the properties, get their scope value and set it to scope.props
           var renderMyComponent = function() {
@@ -201,13 +176,23 @@
             renderComponent(reactComponent, applyFunctions(props, scope), $timeout, elem);
           };
 
-          // watch each property name and trigger an update whenever something changes,
-          // to update scope.props with new values
-          propNames.forEach(function(k) {
-            if (applyWatch[k]) {
-              scope.$watch(attrs[k], renderMyComponent, true);
+          // if applyWatch is provided, then apply only for
+          // properties for which the respective flag in applyWatch
+          // is set to true. otherwise set watch for all properties.
+          if (angular.isDefined(applyWatch) &&
+              applyWatch.length === propNames.length) {
+            for (var i = 0; i < propNames.length; i++) {
+              if (applyWatch[i]) {
+                scope.$watch(attrs[propNames[i]], renderMyComponent, true);
+              }
             }
-          });
+          } else {
+            // watch each property name and trigger an update whenever something changes,
+            // to update scope.props with new values
+            propNames.forEach(function(k) {
+              scope.$watch(attrs[k], renderMyComponent, true);
+            });
+          }
 
           renderMyComponent();
 
