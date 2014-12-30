@@ -157,7 +157,7 @@
   //     <hello name="name"/>
   //
   var reactDirective = function($timeout, $injector) {
-    return function(reactComponentName, propNames) {
+    return function(reactComponentName, propNames, watchProps) {
       return {
         restrict: 'E',
         replace: true,
@@ -176,11 +176,22 @@
             renderComponent(reactComponent, applyFunctions(props, scope), $timeout, elem);
           };
 
-          // watch each property name and trigger an update whenever something changes,
-          // to update scope.props with new values
-          propNames.forEach(function(k) {
-            scope.$watch(attrs[k], renderMyComponent, true);
-          });
+          // if watchProps is defined, then before applying watch on a property,
+          // check whether it should be applied i.e. it's name is contained in the
+          // watchProps array
+          if (angular.isArray(watchProps)) {
+            propNames.forEach(function (k) {
+              if (watchProps.indexOf(k) > -1) {
+                scope.$watch(attrs[k], renderMyComponent, true);
+              }
+            });
+          } else {
+            // watch each property name and trigger an update whenever something changes,
+            // to update scope.props with new values
+            propNames.forEach(function(k) {
+              scope.$watch(attrs[k], renderMyComponent, true);
+            });
+          }
 
           renderMyComponent();
 
