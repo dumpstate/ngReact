@@ -1,3 +1,5 @@
+Fork on ngReact that is extending the reactDirective. Now the propName argument can be an array of pairs - the key (name of the property) and the boolean indicating whether to apply watch on the property.
+
 # ngReact
 
 The [React.js](http://facebook.github.io/react/) library can be used as a view component in web applications. ngReact is an Angular module that allows React Components to be used in [AngularJS](https://angularjs.org/) applications.
